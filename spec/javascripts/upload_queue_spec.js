@@ -8,9 +8,7 @@
 
 // Spec helper to check the expected value of a promise
 //
-var checkPromise = function(fnPromise, expectedVal) {
-    var promise = fnPromise();
-
+var checkPromise = function(promise, expectedVal) {
     var TIMEOUT = 1000;
     var completed = false;
     var returnVal;
@@ -80,7 +78,7 @@ describe("UploadQueue", function() {
     });
 
     it("should report queue length of 0", function() {
-        checkPromise(function() { return q.length() }, 0);
+        checkPromise(q.length(), 0);
     });
 
     it("should queue and report new length of 1", function() {
@@ -89,10 +87,13 @@ describe("UploadQueue", function() {
                   38.473469, -121.821177,
                   40,
                 '{"device":666,"targetWidth":1536,"targetHeight":2048}');
-        checkPromise(function() { return q.length() }, 1);
+        checkPromise(q.length(), 1);
     });
 
-    xit("should report length of 1");
+    it("should empty table of rows for testing", function() {
+        checkPromise(q.empty(), 1);     // number of rows dumped
+        checkPromise(q.length(), 0);
+    });
 
     xit("should dequeue");
 

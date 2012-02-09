@@ -66,36 +66,23 @@ describe("UploadQueue", function() {
         });
     });
 
-    xit("should report queue length of 0", function() {
+    it("should report queue length of 0", function() {
         var promise = q.length();
 
         var TIMEOUT = 1000;
         var completed = false;
-        var len = -666;
+        var len = -1;
 
         runs(function() {
             promise.done(function(result) {
-                console.log("PROMISE.DONE", len);
                 len = result;
-                console.log("PROMISE.DONE", len);
-                console.log("PROMISE.DONE", result, typeof(result));
-                completed = true;
-            });
-            promise.fail(function(error) {
-                expect(promise).toBeUndefined();
                 completed = true;
             });
         });
-        waitsFor(
-            function() {
-                return completed;
-            },
-            "PROMISE timed out in " + TIMEOUT + " ms",
-            TIMEOUT
-        );
-
-        console.log("WAITSFOR", len);
-        expect(len).toBe(0);
+        waitsFor(function() {return completed;}, "TIMEOUT", TIMEOUT);
+        runs(function() {
+            expect(len).toBe(0);
+        });
     });
 
     xit("should enqueue");

@@ -48,15 +48,49 @@ describe("UploadQueue", function() {
     });
 
     it("should provide utility function for SQL execution", function() {
-        q.executeSql("CREATE TABLE test1(id INTEGER);");
-        q.executeSql("DROP TABLE test1;");
+        var create, drop1;
+
+        runs(function() {
+            create = q.executeSql("CREATE TABLE IF NOT EXISTS test1(id INT);");
+            create.done(function() {
+                drop1 = q.executeSql("DROP TABLE test1;");
+            });
+        });
+
+        waitsFor(function() { return drop1 !== undefined }, "TIMEOUT", 500);
+
+        runs(function() {
+            expect(create.isResolved()).toBe(true);
+            expect(drop1.isResolved()).toBe(true);
+        });
+    });
+
+    it("should provide utility function for SQL execution, redux", function() {
+        var drop;
+
+        runs(function() {
+            drop = q.executeSql("DROP TABLE test1;");
+        });
+
+        waitsFor(function() { return drop !== undefined }, "TIMEOUT", 5000);
+
+        runs(function() {
+            expect(drop.isResolved()).toBe(false);
+        });
     });
 
     it("should report queue length of 0", function() {
         checkPromise(function() { return q.length() }, 0);
     });
 
-    xit("should enqueue");
+    xit("should queue and report new length of 1", function() {
+        q.enqueue("file:///var/app/dummy/photo1.jpg",
+                  "photo1.jpg",
+                  38.473469, -121.821177,
+                  40,
+                '{"device":666,"targetWidth":1536,"targetHeight":2048}');
+        checkPromise(function() { return q.length() }, 1);
+    });
 
     xit("should report length of 1");
 

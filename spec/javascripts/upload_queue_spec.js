@@ -83,7 +83,7 @@ describe("UploadQueue", function() {
         checkPromise(function() { return q.length() }, 0);
     });
 
-    xit("should queue and report new length of 1", function() {
+    it("should queue and report new length of 1", function() {
         q.enqueue("file:///var/app/dummy/photo1.jpg",
                   "photo1.jpg",
                   38.473469, -121.821177,

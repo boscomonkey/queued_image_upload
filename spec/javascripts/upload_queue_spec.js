@@ -187,10 +187,11 @@ describe("UploadQueue", function() {
     });
 
     it("should update status of item given its ID", function() {
-        var length;
+        // fn returns a promise of nested sequential operations
+        var fnPromise = function() {
+            var dfd = $.Deferred();
 
-        // get ID of first queued item
-        runs(function() {
+            // get ID of first queued item
             q.find_all_by_status("QUEUED").done(function(rows) {
                 var itemId = rows.item(0).id;
 
@@ -203,27 +204,27 @@ describe("UploadQueue", function() {
 
                     // NEST: get number of "CRAZY" entries
                     q.length("CRAZY").done(function(len) {
-                        length = len;
+                        dfd.resolve(len);
                     });
                 });
             });
-        });
 
-        // block until length is set
-        waitsFor(function() { return undefined !== length }, "length", 100);
+            return dfd.promise();
+        };
 
         // final check
-        runs(function() {
-            expect(length).toBe(1);
-        });
+        testFunc(
+            fnPromise(),
+            function(length) {
+                expect(length).toBe(1);
+            }
+        );
     });
 
     it("should empty table of rows for testing", function() {
         testValue(q.empty(), 2);        // number of rows dumped
         testValue(q.length(), 0);
     });
-
-    xit("should dequeue");
 
     xit("should report length of 0");
 

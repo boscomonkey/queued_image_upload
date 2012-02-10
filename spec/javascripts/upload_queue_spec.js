@@ -55,6 +55,7 @@ Array.prototype.pushPromise = function(promise) {
 //
 describe("UploadQueue", function() {
 
+    var fnNoOp = function () {};
     var q;
 
     beforeEach(function() {
@@ -110,11 +111,16 @@ describe("UploadQueue", function() {
     });
 
     it("should queue and report new length of 1", function() {
-        q.enqueue("file:///var/app/dummy/photo1.jpg",
-                  "photo1.jpg",
-                  38.473469, -121.821177,
-                  40,
-                '{"device":666,"targetWidth":1536,"targetHeight":2048}');
+        testFunc(
+            q.enqueue("file:///var/app/dummy/photo1.jpg",
+                      "photo1.jpg",
+                      38.473469, -121.821177,
+                      40,
+                      '{"device":666,"targetWidth":1536,"targetHeight":2048}'),
+            function(sqlResult) {
+                expect(typeof sqlResult.insertId).toBe("number");
+            }
+        );
         testValue(q.length(), 1);
     });
 
@@ -149,8 +155,35 @@ describe("UploadQueue", function() {
         );
     });
 
+    it("should return entries in reverse chron order", function() {
+        // make the existing entry super young
+        var future = new Date() + 1000;
+        testFunc(
+            q.executeSql("UPDATE uploads SET updated_at=?", [future]),
+            fnNoOp
+        );
+        // insert a new entry but it will still be older than the first entry
+        testFunc(
+            q.enqueue("file:///tmp/photo2.jpg",
+                      "photo2.jpg",
+                      33, -122,
+                      40,
+                      '{"device":666,"targetWidth":400,"targetHeight":300}'),
+            fnNoOp
+        );
+        // if we sort in reverse chron, then the first item in the
+        // result should be "photo2.jpg"
+        testFunc(
+            q.find_all_by_status("QUEUED"),
+            function(resultRows) {
+                expect(resultRows.length).toBe(2);
+                expect(resultRows.item(0).fname).toBe("photo2.jpg");
+            }
+        );
+    });
+
     it("should empty table of rows for testing", function() {
-        testValue(q.empty(), 1);        // number of rows dumped
+        testValue(q.empty(), 2);        // number of rows dumped
         testValue(q.length(), 0);
     });
 

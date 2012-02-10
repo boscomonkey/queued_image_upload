@@ -25,6 +25,19 @@ var checkPromise = function(promise, expectedVal) {
     });
 };
 
+/* Pushes the resolved value of a promise onto the Array
+ * receiver. Returns the array for chaining.
+
+   q = new UploadQueue();
+   aa = [];
+   aa.pushPromise(q.length());
+ */
+Array.prototype.pushPromise = function(promise) {
+    var array = this;
+    promise.done(function(x) { array.push(x) });
+    return array;
+};
+
 describe("UploadQueue", function() {
 
     var q;
@@ -96,6 +109,28 @@ describe("UploadQueue", function() {
 
     it("should count 'DONE' entries as 0", function() {
         checkPromise(q.length("DONE"), 0);
+    });
+
+    it("should count 'QUEUED' entries as 1", function() {
+        checkPromise(q.length("QUEUED"), 1);
+    });
+
+    it("should return 'QUEUED' entries", function() {
+        var arr = [];
+
+        runs(function() {
+            arr.pushPromise(q.find_all_by_status("QUEUED"));
+        });
+        waitsFor(function() { return arr.length > 0 },
+                 "find_all_by_status",
+                 1000);
+        runs(function() {
+            var rows = arr[0];
+            expect(rows.length).toBe(1);
+
+            var item = rows.item(0);
+            expect(item.fname).toBe("photo1.jpg");
+        });
     });
 
     it("should empty table of rows for testing", function() {

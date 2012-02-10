@@ -6,28 +6,41 @@
  * restarting from crashes.
  */
 
-// Spec helper to check the expected value of a promise
+// Spec helper to pass the "done" value of a promise to a test
+// function.
 //
-var checkPromise = function(promise, expectedVal) {
+// fnTest = function(promisedValue)
+//
+var testFunc = function(promise, fnTest) {
     var TIMEOUT = 1000;
     var completed = false;
-    var returnVal;
+    var testVal;
 
     runs(function() {
         promise.done(function(result) {
-            returnVal = result;
+            testVal = result;
             completed = true;
         });
     });
     waitsFor(function() {return completed;}, "TIMEOUT", TIMEOUT);
     runs(function() {
-        expect(returnVal).toBe(expectedVal);
+        fnTest(testVal);
     });
 };
 
-/* Pushes the resolved value of a promise onto the Array
- * receiver. Returns the array for chaining.
+// Spec helper to check the expected value of a promise
+//
+var testValue = function(promise, expectedVal) {
+    testFunc(
+        promise,
+        function(testValue) {
+            expect(testValue).toBe(expectedVal);
+        }
+    );
+};
 
+/* Console command line helper that pushes the resolved value of a
+ * promise onto the Array receiver. Returns the array for chaining.
    q = new UploadQueue();
    aa = [];
    aa.pushPromise(q.length());
@@ -38,6 +51,8 @@ Array.prototype.pushPromise = function(promise) {
     return array;
 };
 
+// Finally, the actual specs for UploadQueue itself
+//
 describe("UploadQueue", function() {
 
     var q;
@@ -91,7 +106,7 @@ describe("UploadQueue", function() {
     });
 
     it("should report queue length of 0", function() {
-        checkPromise(q.length(), 0);
+        testValue(q.length(), 0);
     });
 
     it("should queue and report new length of 1", function() {
@@ -100,42 +115,33 @@ describe("UploadQueue", function() {
                   38.473469, -121.821177,
                   40,
                 '{"device":666,"targetWidth":1536,"targetHeight":2048}');
-        checkPromise(q.length(), 1);
+        testValue(q.length(), 1);
     });
 
     it("should take optional 'state' argument in length()", function() {
-        checkPromise(q.length("UPLOADING"), 0);
+        testValue(q.length("UPLOADING"), 0);
     });
 
     it("should count 'DONE' entries as 0", function() {
-        checkPromise(q.length("DONE"), 0);
+        testValue(q.length("DONE"), 0);
     });
 
     it("should count 'QUEUED' entries as 1", function() {
-        checkPromise(q.length("QUEUED"), 1);
+        testValue(q.length("QUEUED"), 1);
     });
 
     it("should return 'QUEUED' entries", function() {
-        var arr = [];
+        testFunc(q.find_all_by_status("QUEUED"), function(resultRows) {
+            expect(resultRows.length).toBe(1);
 
-        runs(function() {
-            arr.pushPromise(q.find_all_by_status("QUEUED"));
-        });
-        waitsFor(function() { return arr.length > 0 },
-                 "find_all_by_status",
-                 1000);
-        runs(function() {
-            var rows = arr[0];
-            expect(rows.length).toBe(1);
-
-            var item = rows.item(0);
+            var item = resultRows.item(0);
             expect(item.fname).toBe("photo1.jpg");
         });
     });
 
     it("should empty table of rows for testing", function() {
-        checkPromise(q.empty(), 1);     // number of rows dumped
-        checkPromise(q.length(), 0);
+        testValue(q.empty(), 1);        // number of rows dumped
+        testValue(q.length(), 0);
     });
 
     xit("should dequeue");

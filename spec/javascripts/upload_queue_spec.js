@@ -187,38 +187,25 @@ describe("UploadQueue", function() {
     });
 
     it("should update status of item given its ID", function() {
-        var itemId;
-        var updated = false;
         var length;
 
         // get ID of first queued item
         runs(function() {
             q.find_all_by_status("QUEUED").done(function(rows) {
-                itemId = rows.item(0).id;
+                var itemId = rows.item(0).id;
 
                 expect(itemId).toBe(2);
                 expect(rows.length).toBe(2);
-            });
-        });
 
-        // block until itemId is found
-        waitsFor(function() { return undefined !== itemId }, "itemId", 100);
+                // NEST: update status of first item
+                q.updateStatus(itemId, "CRAZY").done(function(sqlResult) {
+                    expect(sqlResult.rowsAffected).toBe(1);
 
-        // update its status
-        runs(function() {
-            q.updateStatus(itemId, "CRAZY").done(function(sqlResult) {
-                expect(sqlResult.rowsAffected).toBe(1);
-                updated = true;
-            });
-        });
-
-        // block until update is complete
-        waitsFor(function() { return updated }, "updated", 100);
-
-        // test length for CRAZY
-        runs(function() {
-            q.length("CRAZY").done(function(len) {
-                length = len;
+                    // NEST: get number of "CRAZY" entries
+                    q.length("CRAZY").done(function(len) {
+                        length = len;
+                    });
+                });
             });
         });
 

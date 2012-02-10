@@ -160,7 +160,9 @@ describe("UploadQueue", function() {
         var future = new Date() + 1000;
         testFunc(
             q.executeSql("UPDATE uploads SET updated_at=?", [future]),
-            fnNoOp
+            function(sqlResult) {
+                expect(sqlResult.rowsAffected).toBe(1);
+            }
         );
         // insert a new entry but it will still be older than the first entry
         testFunc(
@@ -169,7 +171,9 @@ describe("UploadQueue", function() {
                       33, -122,
                       40,
                       '{"device":666,"targetWidth":400,"targetHeight":300}'),
-            fnNoOp
+            function(sqlResult) {
+                expect(sqlResult.rowsAffected).toBe(1);
+            }
         );
         // if we sort in reverse chron, then the first item in the
         // result should be "photo2.jpg"
@@ -180,6 +184,51 @@ describe("UploadQueue", function() {
                 expect(resultRows.item(0).fname).toBe("photo2.jpg");
             }
         );
+    });
+
+    it("should update status of item given its ID", function() {
+        var itemId;
+        var updated = false;
+        var length;
+
+        // get ID of first queued item
+        runs(function() {
+            q.find_all_by_status("QUEUED").done(function(rows) {
+                itemId = rows.item(0).id;
+
+                expect(itemId).toBe(2);
+                expect(rows.length).toBe(2);
+            });
+        });
+
+        // block until itemId is found
+        waitsFor(function() { return undefined !== itemId }, "itemId", 100);
+
+        // update its status
+        runs(function() {
+            q.updateStatus(itemId, "CRAZY").done(function(sqlResult) {
+                expect(sqlResult.rowsAffected).toBe(1);
+                updated = true;
+            });
+        });
+
+        // block until update is complete
+        waitsFor(function() { return updated }, "updated", 100);
+
+        // test length for CRAZY
+        runs(function() {
+            q.length("CRAZY").done(function(len) {
+                length = len;
+            });
+        });
+
+        // block until length is set
+        waitsFor(function() { return undefined !== length }, "length", 100);
+
+        // final check
+        runs(function() {
+            expect(length).toBe(1);
+        });
     });
 
     it("should empty table of rows for testing", function() {

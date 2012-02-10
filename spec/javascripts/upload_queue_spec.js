@@ -139,6 +139,16 @@ describe("UploadQueue", function() {
         });
     });
 
+    it("should return zero 'QUEUED' entries older than 10 min", function() {
+        var tenMinutesAgo = new Date() - 10 * 60 * 1000;
+        testFunc(
+            q.find_all_by_status("QUEUED", tenMinutesAgo),
+            function(resultRows) {
+                expect(resultRows.length).toBe(0);
+            }
+        );
+    });
+
     it("should empty table of rows for testing", function() {
         testValue(q.empty(), 1);        // number of rows dumped
         testValue(q.length(), 0);

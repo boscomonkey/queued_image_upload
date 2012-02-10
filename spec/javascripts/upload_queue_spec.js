@@ -90,6 +90,14 @@ describe("UploadQueue", function() {
         checkPromise(q.length(), 1);
     });
 
+    it("should take optional 'state' argument in length()", function() {
+        checkPromise(q.length("UPLOADING"), 0);
+    });
+
+    it("should count 'DONE' entries as 0", function() {
+        checkPromise(q.length("DONE"), 0);
+    });
+
     it("should empty table of rows for testing", function() {
         checkPromise(q.empty(), 1);     // number of rows dumped
         checkPromise(q.length(), 0);

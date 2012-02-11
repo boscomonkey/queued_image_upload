@@ -60,11 +60,11 @@ describe("UploadQueue", function() {
     });
 
     it("should report queue length of 0", function() {
-        testValue(q.length(), 0);
+        testPromiseValue(q.length(), 0);
     });
 
     it("should queue and report new length of 1", function() {
-        testFunc(
+        testPromise(
             q.enqueue("file:///var/app/dummy/photo1.jpg",
                       "photo1.jpg",
                       38.473469, -121.821177,
@@ -74,23 +74,23 @@ describe("UploadQueue", function() {
                 expect(typeof sqlResult.insertId).toBe("number");
             }
         );
-        testValue(q.length(), 1);
+        testPromiseValue(q.length(), 1);
     });
 
     it("should take optional 'state' argument in length()", function() {
-        testValue(q.length("UPLOADING"), 0);
+        testPromiseValue(q.length("UPLOADING"), 0);
     });
 
     it("should count 'DONE' entries as 0", function() {
-        testValue(q.length("DONE"), 0);
+        testPromiseValue(q.length("DONE"), 0);
     });
 
     it("should count 'QUEUED' entries as 1", function() {
-        testValue(q.length("QUEUED"), 1);
+        testPromiseValue(q.length("QUEUED"), 1);
     });
 
     it("should return 'QUEUED' entries", function() {
-        testFunc(q.find_all_by_status("QUEUED"), function(resultRows) {
+        testPromise(q.find_all_by_status("QUEUED"), function(resultRows) {
             expect(resultRows.length).toBe(1);
 
             var item = resultRows.item(0);
@@ -100,7 +100,7 @@ describe("UploadQueue", function() {
 
     it("should return zero 'QUEUED' entries older than 10 min", function() {
         var tenMinutesAgo = new Date() - 10 * 60 * 1000;
-        testFunc(
+        testPromise(
             q.find_all_by_status("QUEUED", tenMinutesAgo),
             function(resultRows) {
                 expect(resultRows.length).toBe(0);
@@ -111,14 +111,14 @@ describe("UploadQueue", function() {
     it("should return entries in reverse chron order", function() {
         // make the existing entry super young
         var future = new Date() + 1000;
-        testFunc(
+        testPromise(
             q.executeSql("UPDATE uploads SET updated_at=?", [future]),
             function(sqlResult) {
                 expect(sqlResult.rowsAffected).toBe(1);
             }
         );
         // insert a new entry but it will still be older than the first entry
-        testFunc(
+        testPromise(
             q.enqueue("file:///tmp/photo2.jpg",
                       "photo2.jpg",
                       33, -122,
@@ -130,7 +130,7 @@ describe("UploadQueue", function() {
         );
         // if we sort in reverse chron, then the first item in the
         // result should be "photo2.jpg"
-        testFunc(
+        testPromise(
             q.find_all_by_status("QUEUED"),
             function(resultRows) {
                 expect(resultRows.length).toBe(2);
@@ -166,7 +166,7 @@ describe("UploadQueue", function() {
         };
 
         // final check
-        testFunc(
+        testPromise(
             fnPromise(),
             function(length) {
                 expect(length).toBe(1);
@@ -175,8 +175,8 @@ describe("UploadQueue", function() {
     });
 
     it("should empty table of rows for testing", function() {
-        testValue(q.empty(), 2);        // number of rows dumped
-        testValue(q.length(), 0);
+        testPromiseValue(q.empty(), 2);         // number of rows dumped
+        testPromiseValue(q.length(), 0);
     });
 
     xit("should report length of 0");

@@ -6,53 +6,6 @@
  * restarting from crashes.
  */
 
-// Spec helper to pass the "done" value of a promise to a test
-// function.
-//
-// fnTest = function(promisedValue)
-//
-var testFunc = function(promise, fnTest) {
-    var TIMEOUT = 1000;
-    var completed = false;
-    var testVal;
-
-    runs(function() {
-        promise.done(function(result) {
-            testVal = result;
-            completed = true;
-        });
-    });
-    waitsFor(function() {return completed;}, "TIMEOUT", TIMEOUT);
-    runs(function() {
-        fnTest(testVal);
-    });
-};
-
-// Spec helper to check the expected value of a promise
-//
-var testValue = function(promise, expectedVal) {
-    testFunc(
-        promise,
-        function(testValue) {
-            expect(testValue).toBe(expectedVal);
-        }
-    );
-};
-
-/* Console command line helper that pushes the resolved value of a
- * promise onto the Array receiver. Returns the array for chaining.
-   q = new UploadQueue();
-   aa = [];
-   aa.pushPromise(q.length());
- */
-Array.prototype.pushPromise = function(promise) {
-    var array = this;
-    promise.done(function(x) { array.push(x) });
-    return array;
-};
-
-// Finally, the actual specs for UploadQueue itself
-//
 describe("UploadQueue", function() {
 
     var fnNoOp = function () {};

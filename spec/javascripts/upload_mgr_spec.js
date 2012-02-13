@@ -6,17 +6,19 @@
 
 describe("UploadMgr", function() {
 
-    var runCount = 0;
     var mgr;
+    var item;           // item added by the first submit beforeEach
 
     beforeEach(function() {
         mgr = new UploadMgr();
     });
 
+/*
     afterEach(function () {
         var q = new UploadQueue();
         q.empty();
     });
+*/
 
     it("should instantiate properly", function() {
         expect(mgr).toBeDefined();
@@ -27,7 +29,7 @@ describe("UploadMgr", function() {
     });
 
     describe("#submit", function() {
-        it("should queue to DB with 'callbackKey' and return handler (a la 'init' to let clients attach callbacks", function() {
+        it("should queue to DB with 'callbackKey' and return item (a la 'init' to let clients attach callbacks", function() {
 
             var key = "callbackKey1";
 
@@ -41,8 +43,7 @@ describe("UploadMgr", function() {
                         32.32, -120.12,
                         40, '{"device":666}'
                     ).done(function(handler) {
-
-                        console.log("handler", handler);
+                        item = handler;         // suite scoped variable
 
                         q.length().done(function(afterLen) {
                             dfd.resolve({
@@ -71,8 +72,11 @@ describe("UploadMgr", function() {
 
     // spec #init after #submit so that we have some data in the DB
     describe("#init", function() {
-        it("should enumerate item handlers (exposes 'callbackKey') to let clients attach callbacks", function() {
-            expect(true).toBe(false);
+        it("should enumerate items (exposing 'addListener') to let clients attach callbacks", function() {
+            testPromiseValue(
+                mgr.init(function(item) { console.log("item", item) }),
+                1
+            );
         });
     });
 
@@ -95,6 +99,17 @@ describe("UploadMgr", function() {
 
         it("should 'requeue' failed uploads", function() {
             expect(true).toBe(false);
+        });
+    });
+
+    describe("clean up", function() {
+        it("drop table for next run", function() {
+            testPromise(
+                mgr.queue.executeSql("DROP TABLE uploads;"),
+                function(sqlResult) {
+                    expect(sqlResult.rowsAffected).toBe(0.0);
+                }
+            );
         });
     });
 

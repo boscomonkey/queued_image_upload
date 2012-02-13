@@ -188,7 +188,12 @@ describe("UploadQueue", function() {
     });
 
     it("drop table for next run", function() {
-        q.executeSql("DROP TABLE uploads;");
+        testPromise(
+            q.executeSql("DROP TABLE uploads;"),
+            function(sqlResult) {
+                expect(sqlResult.rowsAffected).toBe(0);
+            }
+        );
     });
 
 });

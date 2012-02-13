@@ -63,18 +63,23 @@ describe("UploadQueue", function() {
         testPromiseValue(q.length(), 0);
     });
 
-    it("should queue and report new length of 1", function() {
+    it("should queue and return handler promise", function() {
+        var key = "callbackKey1";
+        var fname = "photo1.jpg";
+
         testPromise(
-            q.enqueue("file:///var/app/dummy/photo1.jpg",
-                      "photo1.jpg",
+            q.enqueue(key,
+                      "file:///var/app/dummy/photo1.jpg",
+                      fname,
                       38.473469, -121.821177,
                       40,
                       '{"device":666,"targetWidth":1536,"targetHeight":2048}'),
-            function(sqlResult) {
-                expect(typeof sqlResult.insertId).toBe("number");
+            function(handler) {
+                expect(typeof handler).toBe("object");
+                expect(handler.key).toBe(key);
+                expect(handler.fname).toBe(fname);
             }
         );
-        testPromiseValue(q.length(), 1);
     });
 
     it("should take optional 'state' argument in length()", function() {
@@ -111,6 +116,8 @@ describe("UploadQueue", function() {
     it("should return entries in reverse chron order", function() {
         // make the existing entry super young
         var future = new Date() + 1000;
+        var key2 = "callbackKey2";
+
         testPromise(
             q.executeSql("UPDATE uploads SET updated_at=?", [future]),
             function(sqlResult) {
@@ -119,13 +126,14 @@ describe("UploadQueue", function() {
         );
         // insert a new entry but it will still be older than the first entry
         testPromise(
-            q.enqueue("file:///tmp/photo2.jpg",
+            q.enqueue(key2,
+                      "file:///tmp/photo2.jpg",
                       "photo2.jpg",
                       33, -122,
                       40,
                       '{"device":666,"targetWidth":400,"targetHeight":300}'),
-            function(sqlResult) {
-                expect(sqlResult.rowsAffected).toBe(1);
+            function(handler) {
+                expect(handler.key).toBe(key2);
             }
         );
         // if we sort in reverse chron, then the first item in the
@@ -179,7 +187,9 @@ describe("UploadQueue", function() {
         testPromiseValue(q.length(), 0);
     });
 
-    xit("should report length of 0");
+    it("drop table for next run", function() {
+        q.executeSql("DROP TABLE uploads;");
+    });
 
 });
 

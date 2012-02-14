@@ -98,7 +98,7 @@ describe("UploadQueue", function() {
         testPromise(q.find_all_by_status("QUEUED"), function(resultRows) {
             expect(resultRows.length).toBe(1);
 
-            var item = resultRows.item(0);
+            var item = resultRows[0];
             expect(item.fname).toBe("photo1.jpg");
         });
     });
@@ -142,7 +142,7 @@ describe("UploadQueue", function() {
             q.find_all_by_status("QUEUED"),
             function(resultRows) {
                 expect(resultRows.length).toBe(2);
-                expect(resultRows.item(0).fname).toBe("photo2.jpg");
+                expect(resultRows[0].fname).toBe("photo2.jpg");
             }
         );
     });
@@ -154,7 +154,7 @@ describe("UploadQueue", function() {
 
             // get ID of first queued item
             q.find_all_by_status("QUEUED").done(function(rows) {
-                var itemId = rows.item(0).id;
+                var itemId = rows[0].id;
 
                 expect(itemId).toBe(2);
                 expect(rows.length).toBe(2);

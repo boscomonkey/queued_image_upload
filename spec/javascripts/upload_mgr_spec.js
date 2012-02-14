@@ -81,12 +81,56 @@ describe("UploadMgr", function() {
     });
 
     describe("#ping", function() {
-        it("should check for expired queued entries", function() {
-            expect(true).toBe(false);
+        var expiredItem;
+
+        it("checks for expired uploads returns none", function() {
+            var promiseExpiredUploads = mgr.getExpiredUploads();
+
+            testPromise(
+                promiseExpiredUploads,
+                function(emptyArray) {
+                    expect(emptyArray.length).toBe(0);
+                }
+            );
+        });
+
+        it("should find expired queued entries", function() {
+            // age the one item in the database os that it's older than TTL
+            var ageIt = function() {
+                var dfd = $.Deferred();
+
+                var q = new UploadQueue();
+                q.executeSql(
+                    "UPDATE uploads SET updated_at=?",
+                    [new Date() - mgr.ttl - 1]
+                ).done(function(sqlResult) {
+                    mgr.getExpiredUploads().done(function(expiredRows) {
+                        dfd.resolve(expiredRows);
+                    });
+                });
+
+                return dfd.promise();
+            };
+
+            testPromise(ageIt(), function(expiredRows) {
+                expect(expiredRows.length).toBe(1);
+
+                console.log("expiredRows", expiredRows);
+
+                // cache for next spec
+                expiredItem = expiredRows[0];
+            });
         });
 
         it("should 'touch' expired queued entries", function() {
-            expect(true).toBe(false);
+            testPromise(
+                mgr.touch(expiredItem.id),
+                function(touchedItem) {
+                    expect(touchedItem.state).toBe("QUEUED");
+                    expect(Date.parse(touchedItem.updated_at)).
+                        toBeGreaterThan(expiredItem.updated_at);
+                }
+            );
         });
 
         it("should fire off uploads", function() {

@@ -13,13 +13,6 @@ describe("UploadMgr", function() {
         mgr = new UploadMgr();
     });
 
-/*
-    afterEach(function () {
-        var q = new UploadQueue();
-        q.empty();
-    });
-*/
-
     it("should instantiate properly", function() {
         expect(mgr).toBeDefined();
     });

@@ -104,13 +104,13 @@ describe("UploadMgr", function() {
                 function(oneItem) {
                     expect(oneItem.key).toBe(key);
 
-                    // stash item for next spec
+                    // stash item for upload spec
                     nextQueued = oneItem;
                 }
             );
         });
 
-        it("should fire off uploads", function() {
+        it("should fire off uploads successfully", function() {
             // mock a successful upload
             FileTransferMock.enableMockUpload(true);
             spyOn(FileTransfer.prototype, "upload").andCallThrough();
@@ -128,17 +128,43 @@ describe("UploadMgr", function() {
             );
         });
 
+        it("should requeue unsuccessful uploads", function() {
+            // mock a successful upload
+            FileTransferMock.enableMockUpload(false);
+            spyOn(FileTransfer.prototype, "upload").andCallThrough();
+
+            var promise = mgr.upload(nextQueued.id);
+            testPromise(
+                promise,
+                function(requeuedItem) {
+                    expect(FileTransfer.prototype.upload).toHaveBeenCalled();
+
+                    expect(requeuedItem.id).toBe(nextQueued.id);
+                    expect(requeuedItem.state).
+                        toBe(UploadMgr.STATUS.QUEUED);
+                }
+            );
+        });
+
         it("should find expired queued entries", function() {
-            // age the one item in the database os that it's older than TTL
+            // age the one item in the database so it's older than TTL
             var ageIt = function() {
                 var dfd = $.Deferred();
 
                 var q = new UploadQueue();
                 q.executeSql(
-                    "UPDATE uploads SET updated_at=?",
-                    [new Date() - mgr.ttl - 1]
+                    "UPDATE uploads SET updated_at=?, state=? WHERE id=?",
+                    [new Date() - mgr.ttl - 1,
+                     UploadMgr.STATUS.UPLOADING,
+                     nextQueued.id]
                 ).done(function(sqlResult) {
+
+                    console.log("XXXXXXX", sqlResult);
+
                     mgr.getExpiredUploads().done(function(expiredRows) {
+
+                        console.log("EXPIRED ROWS", expiredRows);
+
                         dfd.resolve(expiredRows);
                     });
                 });
@@ -148,8 +174,6 @@ describe("UploadMgr", function() {
 
             testPromise(ageIt(), function(expiredRows) {
                 expect(expiredRows.length).toBe(1);
-
-                console.log("expiredRows", expiredRows);
 
                 // cache for next spec
                 expiredItem = expiredRows[0];
@@ -161,20 +185,17 @@ describe("UploadMgr", function() {
                 mgr.touch(expiredItem.id),
                 function(touchedItem) {
                     expect(touchedItem.state).
-                        toBe(UploadMgr.STATUS.QUEUED);
+                        toBe(UploadMgr.STATUS.UPLOADING);
                     expect(Date.parse(touchedItem.updated_at)).
                         toBeGreaterThan(expiredItem.updated_at);
                 }
             );
         });
 
-        it("should 'mark' successful uploads and fire event", function() {
+        it("combine all previous private methods", function() {
             expect(true).toBe(false);
         });
 
-        it("should 'requeue' failed uploads", function() {
-            expect(true).toBe(false);
-        });
     });
 
     describe("clean up", function() {

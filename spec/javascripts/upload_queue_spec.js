@@ -155,19 +155,37 @@ describe("UploadQueue", function() {
             // get ID of first queued item
             q.find_all_by_status("QUEUED").done(function(rows) {
                 var itemId = rows[0].id;
+                var itemTimestamp = rows[0].updated_at;
+                var past = new Date(new Date() - 10 * 60 * 1000);
 
                 expect(itemId).toBe(2);
                 expect(rows.length).toBe(2);
 
-                // NEST: update status of first item
-                q.updateStatus(itemId, "CRAZY").done(function(sqlResult) {
-                    expect(sqlResult.rowsAffected).toBe(1);
+                //NEST: update timestamp to the past
+                q.executeSql("UPDATE uploads SET updated_at=? WHERE id=?",
+                             [past, itemId]
+                            ).
+                    done(function(ignoreSqlResult) {
 
-                    // NEST: get number of "CRAZY" entries
-                    q.length("CRAZY").done(function(len) {
-                        dfd.resolve(len);
+                        // NEST: update status of first item
+                        q.updateStatus(itemId, "CRAZY"
+                                      ).
+                            done(function(item) {
+                                var tstamp = new Date(item.updated_at);
+
+                                expect(item.id).toBe(itemId);
+                                expect(tstamp).toBeGreaterThan(past);
+
+                                console.log("past:", past,
+                                            "updated_at", tstamp);
+
+                                // NEST: get number of "CRAZY" entries
+                                q.length("CRAZY").done(function(len) {
+                                    expect(len).toBe(1);
+                                    dfd.resolve(len);
+                                });
+                        });
                     });
-                });
             });
 
             return dfd.promise();

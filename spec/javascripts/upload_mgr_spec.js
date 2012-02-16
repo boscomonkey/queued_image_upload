@@ -84,6 +84,14 @@ describe("UploadMgr", function() {
         var nextQueued;
         var expiredItem;
 
+        it("checks for active uploads", function() {
+            var promise = mgr.getActiveUploads();
+
+            testPromise(promise, function(emptyArray) {
+                expect(emptyArray.length).toBe(0);
+            });
+        });
+
         it("checks for expired uploads returns none", function() {
             var promise = mgr.getExpiredUploads();
 
@@ -159,14 +167,11 @@ describe("UploadMgr", function() {
                      nextQueued.id]
                 ).done(function(sqlResult) {
 
-                    console.log("XXXXXXX", sqlResult);
+                    mgr.getExpiredUploads().
+                        done(function(expiredRows) {
 
-                    mgr.getExpiredUploads().done(function(expiredRows) {
-
-                        console.log("EXPIRED ROWS", expiredRows);
-
-                        dfd.resolve(expiredRows);
-                    });
+                            dfd.resolve(expiredRows);
+                        });
                 });
 
                 return dfd.promise();
@@ -180,10 +185,13 @@ describe("UploadMgr", function() {
             });
         });
 
-        it("should 'touch' expired queued entries", function() {
+        xit("should 'touch' expired queued entries", function() {
             testPromise(
                 mgr.touch(expiredItem.id),
                 function(touchedItem) {
+
+                    console.log("TOUCHED ITEM", touchedItem);
+
                     expect(touchedItem.state).
                         toBe(UploadMgr.STATUS.UPLOADING);
                     expect(Date.parse(touchedItem.updated_at)).
@@ -192,8 +200,10 @@ describe("UploadMgr", function() {
             );
         });
 
-        it("combine all previous private methods", function() {
-            expect(true).toBe(false);
+        it("combine all previous methods into working 'ping'", function() {
+            var promise = mgr.ping();
+
+            testPromiseValue(promise, true);
         });
 
     });

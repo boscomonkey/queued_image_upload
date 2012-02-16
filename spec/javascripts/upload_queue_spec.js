@@ -113,6 +113,29 @@ describe("UploadQueue", function() {
         );
     });
 
+    it("should return 1 'QUEUED' entries older than 10 minutes ago and younger than now", function() {
+        var now = new Date() + 1000;  // resolution is at 1 second granularity
+        var ago = now - 9 * 6 * 1000;
+
+        testPromise(
+            q.find_all_by_status("QUEUED", now, ago),
+            function(array) {
+                expect(array.length).toBe(1);
+            }
+        );
+    });
+
+    it("should return 0 'QUEUED' entries older than now ago and younger than now", function() {
+        var now = new Date() + 1000;  // resolution is at 1 second granularity
+
+        testPromise(
+            q.find_all_by_status("QUEUED", now, now),
+            function(array) {
+                expect(array.length).toBe(0);
+            }
+        );
+    });
+
     it("should return entries in reverse chron order", function() {
         // make the existing entry super young
         var future = new Date() + 1000;

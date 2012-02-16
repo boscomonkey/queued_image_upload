@@ -73,9 +73,26 @@ describe("UploadMgr", function() {
     // spec #init after #submit so that we have some data in the DB
     describe("#init", function() {
         it("should enumerate items (exposing 'addListener') to let clients attach callbacks", function() {
-            testPromiseValue(
-                mgr.init(function(item) { console.log("item", item) }),
-                1
+            var testInit = function() {
+                var promEach = $.Deferred();
+                var fnEach = function(item) { promEach.resolve(item) };
+
+                var dfdCombo = $.Deferred();
+                $.when(mgr.init(fnEach),
+                       promEach).
+                    done(function(numItems, item) {
+                        dfdCombo.resolve({count:numItems, item:item});
+                    });
+
+                return dfdCombo.promise();
+            };
+
+            testPromise(
+                testInit(),
+                function(combo) {
+                    expect(combo.count).toBe(1);
+                    expect(combo.item.key).toBe(key);
+                }
             );
         });
     });

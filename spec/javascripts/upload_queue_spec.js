@@ -28,21 +28,29 @@ describe("UploadQueue", function() {
     });
 
     it("should provide utility function for SQL execution", function() {
-        var create, drop1;
+        var createAndDrop = function () {
+            var dfd = $.Deferred();
+            $.when(
+                q.executeSql("CREATE TABLE IF NOT EXISTS test1(id INT);"),
+                q.executeSql("DROP TABLE test1;")
+            ).
+                done(function(createSqlResult, dropSqlResult) {
 
-        runs(function() {
-            create = q.executeSql("CREATE TABLE IF NOT EXISTS test1(id INT);");
-            create.done(function() {
-                drop1 = q.executeSql("DROP TABLE test1;");
-            });
-        });
+                    console.log("WHEN", createSqlResult, dropSqlResult);
 
-        waitsFor(function() { return drop1 !== undefined }, "TIMEOUT", 500);
+                    dfd.resolve({create: createSqlResult,
+                                 drop:   dropSqlResult});
+                });
+            return dfd.promise();
+        };
 
-        runs(function() {
-            expect(create.isResolved()).toBe(true);
-            expect(drop1.isResolved()).toBe(true);
-        });
+        testPromise(
+            createAndDrop(),
+            function(combo) {
+                expect(combo.create.rows.length + 111.11).toBe(111.11);
+                expect(combo.drop.rows.length   + 222.22).toBe(222.22);
+            }
+        );
     });
 
     it("should provide utility function for SQL execution, redux", function() {

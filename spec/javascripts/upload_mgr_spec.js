@@ -8,7 +8,7 @@ describe("UploadMgr", function() {
 
     var mgr;
     var key = "callbackKey1";
-    var item;           // item added by the first submit beforeEach
+    var submittedItem;          // item added by the first submit beforeEach
 
     beforeEach(function() {
         mgr = new UploadMgr();
@@ -43,8 +43,6 @@ describe("UploadMgr", function() {
                         32.32, -120.12,
                         40, '{"device":666}'
                     ).done(function(handler) {
-                        item = handler;         // suite scoped variable
-
                         q.length().done(function(afterLen) {
                             dfd.resolve({
                                 beforeLen: beforeLen,
@@ -52,6 +50,9 @@ describe("UploadMgr", function() {
                                 afterLength: afterLen
                             });
                         });
+
+                        // stash submitted item for next spec
+                        submittedItem = handler;
                     });
                 });
 
@@ -63,7 +64,6 @@ describe("UploadMgr", function() {
                 function(obj) {
                     expect(obj.beforeLen).toBe(0);
                     expect(obj.handler.key).toBe(key);
-                    expect(typeof obj.handler.addListener).toBe("function");
                     expect(obj.afterLength).toBe(1);
                 }
             );
@@ -72,26 +72,27 @@ describe("UploadMgr", function() {
 
     // spec #init after #submit so that we have some data in the DB
     describe("#init", function() {
-        it("should enumerate items (exposing 'addListener') to let clients attach callbacks", function() {
+        it("should enumerate items to attach callbacks", function() {
             var testInit = function() {
-                var promEach = $.Deferred();
-                var fnEach = function(item) { promEach.resolve(item) };
+                var dfd = $.Deferred();
 
-                var dfdCombo = $.Deferred();
-                $.when(mgr.init(fnEach),
-                       promEach).
-                    done(function(numItems, item) {
-                        dfdCombo.resolve({count:numItems, item:item});
-                    });
+                mgr.init(function(item) {
+                    mgr.addEventHandler(
+                        item,
+                        function(item, event) {
+                            dfd.resolve({item:item, event:event});
+                        }
+                    );
+                });
 
-                return dfdCombo.promise();
+                return dfd.promise();
             };
 
             testPromise(
                 testInit(),
-                function(combo) {
-                    expect(combo.count).toBe(1);
-                    expect(combo.item.key).toBe(key);
+                function(obj) {
+                    expect(obj.item.id + 0.11).toBe(submittedItem.id + 0.11);
+                    expect(obj.event).toBe("INIT");
                 }
             );
         });

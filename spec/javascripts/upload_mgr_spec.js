@@ -168,7 +168,8 @@ describe("UploadMgr", function() {
                     expect(requeuedItem.id).toBe(nextQueued.id);
                     expect(requeuedItem.state).
                         toBe(UploadMgr.STATUS.QUEUED);
-                }
+                },
+                "Assert Negative Scenario"
             );
         });
 
@@ -221,7 +222,9 @@ describe("UploadMgr", function() {
         it("combine all previous methods into working 'ping'", function() {
             var promise = mgr.ping();
 
-            testPromiseValue(promise, true);
+            // expecting false because FileTransfer is configured to
+            // always fail at this point
+            testPromiseValue(promise, false);
         });
 
     });

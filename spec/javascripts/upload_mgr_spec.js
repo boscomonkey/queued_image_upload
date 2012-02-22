@@ -141,15 +141,27 @@ describe("UploadMgr", function() {
             FileTransferMock.enableMockUpload(true);
             spyOn(FileTransfer.prototype, "upload").andCallThrough();
 
-            var promise = mgr.upload(nextQueued.id);
+            var uploadSuccess = function() {
+                var dfd = $.Deferred(); // resolve with uploaded item
+
+                mgr.addEventHandler(nextQueued, function(uploadedItem, evt) {
+                    // resolve promise if this event handler gets called
+                    dfd.resolve(uploadedItem);
+                });
+                mgr.upload(nextQueued.id);
+
+                return dfd.promise();
+            };
             testPromise(
-                promise,
-                function(doneItem) {
+                uploadSuccess(),
+                function(uploadedItem) {
                     expect(FileTransfer.prototype.upload).toHaveBeenCalled();
 
-                    expect(doneItem.id).toBe(nextQueued.id);
-                    expect(doneItem.state).
-                        toBe(UploadMgr.STATUS.DONE);
+                    expect(uploadedItem.id).toBe(nextQueued.id);
+                    expect(uploadedItem.state).
+                        toBe(UploadMgr.STATUS.UPLOADING);
+
+                    // TODO get item after upload and test for DONE
                 }
             );
         });
